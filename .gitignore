@@ -1,0 +1,15 @@
+# Python cache / scratch
+python/__pycache__/
+*.pyc
+*.log
+*.pid
+*.tmp
+
+# Android build outputs (junk, never commit)
+android/OnDeviceVLM/.gradle/
+android/OnDeviceVLM/build/
+android/OnDeviceVLM/app/build/
+**/build/
+local.properties
+.idea/
+*.iml

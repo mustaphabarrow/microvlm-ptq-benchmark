@@ -1,0 +1,113 @@
+package com.example.microvlmptq
+
+import android.content.Context
+import org.tensorflow.lite.Interpreter
+import java.io.FileInputStream
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+
+/**
+ * Thin TFLite runtime wrapper replicating the Python interpreter workflow.
+ */
+class VlmEngine(
+    context: Context,
+    val assetName: String,
+    private val tokenizer: Tokenizer
+) : AutoCloseable {
+
+    private val interpreter: Interpreter
+    private val imageInput: ByteBuffer
+    private val idsInput: ByteBuffer
+    private val maskInput: ByteBuffer
+    private val output: ByteBuffer
+    private val vocabSize: Int
+    private val modelBytesSize: Int
+
+    init {
+        val tensors = context.assets.open(assetName)
+        val bytes = tensors.readBytes()
+        tensors.close()
+        modelBytesSize = bytes.size
+        val opts = Interpreter.Options().apply {
+            numThreads = 2.coerceAtLeast(Runtime.getRuntime().availableProcessors())
+        }
+        val bb = ByteBuffer.allocateDirect(bytes.size).order(ByteOrder.nativeOrder())
+            bb.put(bytes)
+            bb.rewind()
+            interpreter = Interpreter(bb, opts)
+        check(interpreter.getInputTensor(0).shape().size == 4) {
+            "unexpected input count/shape for $assetName"
+        }
+        vocabSize = tokenizer.size
+
+        imageInput = ByteBuffer.allocateDirect(SceneGenerator.IMG_SIZE * SceneGenerator.IMG_SIZE * 3 * 4)
+            .order(ByteOrder.nativeOrder())
+        idsInput = ByteBuffer.allocateDirect(tokenizer.padLen * 8).order(ByteOrder.nativeOrder())
+        maskInput = ByteBuffer.allocateDirect(tokenizer.padLen * 8).order(ByteOrder.nativeOrder())
+        output = ByteBuffer.allocateDirect(tokenizer.padLen * vocabSize * 4).order(ByteOrder.nativeOrder())
+
+        // input index 0 = pixel_values, 1 = input_ids (INT64), 2 = attention_mask (INT64)
+        check(interpreter.getInputTensor(1).dataType().toString().contains("INT64")) {
+            "input_ids must be int64: $assetName"
+        }
+        check(interpreter.getInputTensor(2).dataType().toString().contains("INT64")) {
+            "attention_mask must be int64: $assetName"
+        }
+    }
+
+    /** Single forward. ids/mask are already padded to padLen. */
+    fun forward(imgFloat: FloatArray, ids: IntArray, mask: IntArray) {
+        imageInput.clear()
+        for (v in imgFloat) imageInput.putFloat(v)
+        idsInput.clear()
+        for (v in ids) idsInput.putLong(v.toLong())
+        maskInput.clear()
+        for (v in mask) maskInput.putLong(v.toLong())
+
+        val inputArr = arrayOf<Any>(imageInput, idsInput, maskInput)
+        val outputMap = HashMap<Int, Any>()
+        outputMap[0] = output
+        interpreter.runForMultipleInputsOutputs(inputArr, outputMap)
+    }
+
+    /** Logits at the chosen caption position (bs=1). */
+    fun logitsAt(pos: Int): FloatArray {
+        output.rewind()
+        output.position(pos * vocabSize * 4)
+        val res = FloatArray(vocabSize)
+        for (i in res.indices) res[i] = output.float
+        return res
+    }
+
+    /** Greedy autoregressive generation (parity with python/generate_tflite). */
+    fun generate(imgFloat: FloatArray): Pair<String, Int> {
+        val real = ArrayList<Int>()
+        real.add(tokenizer.vocab.getValue("<bos>"))
+        var steps = 0
+        while (steps < tokenizer.padLen - 1) {
+            val ids = real.toIntArray().let { a ->
+                IntArray(tokenizer.padLen) { if (it < a.size) a[it] else tokenizer.vocab.getValue("<pad>") }
+            }
+            val mask = IntArray(tokenizer.padLen) { if (it < real.size) 1 else 0 }
+            forward(imgFloat, ids, mask)
+            val nxt = argmax(logitsAt(real.size - 1))
+            if (nxt == tokenizer.vocab.getValue("<eos>") ||
+                nxt == tokenizer.vocab.getValue("<pad>")) break
+            real.add(nxt)
+            steps++
+        }
+        return Pair(tokenizer.decode(real.drop(1).toIntArray()), steps)
+    }
+
+    fun modelSizeKb(): Long = modelBytesSize.toLong() / 1024
+
+    override fun close() {
+        interpreter.close()
+    }
+
+    private fun argmax(a: FloatArray): Int {
+        var bi = 0
+        for (i in 1 until a.size) if (a[i] > a[bi]) bi = i
+        return bi
+    }
+}

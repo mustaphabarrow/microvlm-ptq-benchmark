@@ -1,0 +1,28 @@
+{
+  "img_size": 64,
+  "caption_len": 24,
+  "variants": [
+    {
+      "name": "fp32",
+      "file": "microvlm_fp32.tflite",
+      "size_kb": 2939.5
+    },
+    {
+      "name": "fp16",
+      "file": "microvlm_fp16.tflite",
+      "size_kb": 1526.2
+    },
+    {
+      "name": "dyq_int8",
+      "file": "microvlm_dyq_int8.tflite",
+      "size_kb": 940.5
+    },
+    {
+      "name": "int8",
+      "file": "microvlm_int8.tflite",
+      "size_kb": 916.3
+    }
+  ],
+  "preprocess": "divide_by_255",
+  "lighting": "synthetic"
+}

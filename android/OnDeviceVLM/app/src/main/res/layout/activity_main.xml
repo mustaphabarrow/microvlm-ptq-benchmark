@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Micro VLM \u00b7 Post-Training Quantization on Android CPU"
+            android:textStyle="bold"
+            android:textSize="16sp" />
+
+        <Spinner
+            android:id="@+id/variantSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp" />
+
+        <ImageView
+            android:id="@+id/sceneImage"
+            android:layout_width="192dp"
+            android:layout_height="192dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="12dp"
+            android:scaleType="fitCenter"
+            android:background="@android:color/black" />
+
+        <Button
+            android:id="@+id/newSceneBtn"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="New synthetic scene" />
+
+        <Button
+            android:id="@+id/captionBtn"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Run caption (this variant)" />
+
+        <TextView
+            android:id="@+id/trueCaption"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textSize="14sp"
+            android:text="true: -" />
+
+        <TextView
+            android:id="@+id/predCaption"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:text="pred: -" />
+
+        <Button
+            android:id="@+id/benchBtn"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Benchmark 30 forwards" />
+
+        <Button
+            android:id="@+id/saveCsvBtn"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Export CSV" />
+
+        <TextView
+            android:id="@+id/resultText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:fontFamily="monospace"
+            android:textSize="12sp" />
+
+    </LinearLayout>
+</ScrollView>

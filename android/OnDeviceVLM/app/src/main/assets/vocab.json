@@ -1,0 +1,1 @@
+{"vocab": {"<pad>": 0, "<bos>": 1, "<eos>": 2, "<unk>": 3, "blue": 4, "center": 5, "circle": 6, "cyan": 7, "diamond": 8, "green": 9, "large": 10, "left": 11, "magenta": 12, "orange": 13, "red": 14, "right": 15, "small": 16, "square": 17, "star": 18, "triangle": 19, "yellow": 20}, "pad_len": 24}
