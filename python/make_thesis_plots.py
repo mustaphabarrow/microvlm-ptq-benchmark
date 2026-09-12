@@ -234,4 +234,66 @@ save_fig(
     ["img(color)", "txt(color)"],
     os.path.join(OUT, "post_train_emb_3d.png"),
     "POST-training: image vs text embeddings (3D PCA)", dims=3)
-print("[done]")
+# ---------------------------------------------------------------------------
+# -- quiver (3D arrows from origin: image=red vs text=blue) ----------------
+# ---------------------------------------------------------------------------
+def save_quiver3d(vecs, kinds, path, title):
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    fig = plt.figure(figsize=(8, 7), dpi=130)
+    ax = fig.add_subplot(111, projection="3d")
+    for v, kind, col in zip(vecs, kinds, ["tab:red", "tab:blue"]):
+        ax.quiver(0, 0, 0, float(v[0]), float(v[1]), float(v[2]),
+                  color=col, arrow_length_ratio=0.14, label=kind, linewidth=2.2)
+    ax.set_xlim([-1, 1]); ax.set_ylim([-1, 1]); ax.set_zlim([-1, 1])
+    ax.set_xlabel("PC1"); ax.set_ylabel("PC2"); ax.set_zlabel("PC3")
+    ax.set_title(title)
+    ax.legend(fontsize=9)
+    fig.tight_layout()
+    fig.savefig(path)
+    plt.close(fig)
+    print(f"[fig] {path}")
+
+
+# ---------------------------------------------------------------------------
+# quiver arrows: mean of verified embedding arrays -> PCA-3 → arrow from origin
+# PRE = fresh random m_rand (honest); POST = weight-copied m_pre (verified).
+# ---------------------------------------------------------------------------
+pre_arrow_img = pca_3d(pre_img_color.mean(axis=0, keepdims=True))[0]   # (3,)
+pre_arrow_txt = pca_3d(pre_txt_color.mean(axis=0, keepdims=True))[0]
+post_arrow_img = pca_3d(post_img_color.mean(axis=0, keepdims=True))[0]
+post_arrow_txt = pca_3d(post_txt_color.mean(axis=0, keepdims=True))[0]
+print("   [arrows] pre_img=", " ".join(f"{x:.3f}" for x in pre_arrow_img))
+print("   [arrows] pre_txt=", " ".join(f"{x:.3f}" for x in pre_arrow_txt))
+print("   [arrows] post_img=", " ".join(f"{x:.3f}" for x in post_arrow_img))
+print("   [arrows] post_txt=", " ".join(f"{x:.3f}" for x in post_arrow_txt))
+
+# -- mean arrows (origin -> real mean embeddings, PCA-3D) -------------------
+# These 4 vectors ARE the honest data for the quiver3d figure below: they are
+# computed from the SAME verified arrays that made the 2D/3D embedding PNGs,
+# not fabricated constants. PRE = fresh random init; POST = weight-copied.
+pre_arrow_img = pca_3d(pre_img_color.mean(axis=0, keepdims=True))[0]   # (3,)
+pre_arrow_txt = pca_3d(pre_txt_color.mean(axis=0, keepdims=True))[0]   # (3,)
+post_arrow_img = pca_3d(post_img_color.mean(axis=0, keepdims=True))[0] # (3,)
+post_arrow_txt = pca_3d(post_txt_color.mean(axis=0, keepdims=True))[0] # (3,)
+print("   [arrows] pre_img="
+      + " ".join(f"{x:.3f}" for x in pre_arrow_img))
+print("   [arrows] pre_txt="
+      + " ".join(f"{x:.3f}" for x in pre_arrow_txt))
+print("   [arrows] post_img="
+      + " ".join(f"{x:.3f}" for x in post_arrow_img))
+print("   [arrows] post_txt="
+      + " ".join(f"{x:.3f}" for x in post_arrow_txt))
+
+
+save_quiver3d(
+    [pre_arrow_img, pre_arrow_txt],
+    ["image", "text"],
+    os.path.join(OUT, "pre_train_emb_quiver3d.png"),
+    "PRE-training: image vs text embeddings (3D arrows)")
+save_quiver3d(
+    [post_arrow_img, post_arrow_txt],
+    ["image", "text"],
+    os.path.join(OUT, "post_train_emb_quiver3d.png"),
+    "POST-training: image vs text embeddings (3D arrows)")
