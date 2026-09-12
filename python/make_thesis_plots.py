@@ -149,15 +149,19 @@ if "loaded" in dir():
 # ---------------------------------------------------------------------------
 # 2. extract embeddings
 # ---------------------------------------------------------------------------
-pre_img_color = img_emb(m_pre, COLOR_WORDS, "color")
-pre_img_shape = img_emb(m_pre, SHAPE_WORDS, "shape")
-pre_txt_color = txt_emb(m_pre, COLOR_WORDS)
-pre_txt_shape = txt_emb(m_pre, SHAPE_WORDS)
+# PRE must come from an UNTOUCHED random build (the copy at lines 87-133 has
+# already written the trained weights into m_pre -> m_pre is the POST state).
+m_rand = build_model()                                        # fresh random = PRE
+pre_img_color = img_emb(m_rand, COLOR_WORDS, "color")
+pre_img_shape = img_emb(m_rand, SHAPE_WORDS, "shape")
+pre_txt_color = txt_emb(m_rand, COLOR_WORDS)
+pre_txt_shape = txt_emb(m_rand, SHAPE_WORDS)
 
-post_img_color = img_emb(m_pre, COLOR_WORDS, "color") if False else None
-post_img_shape = None
-post_txt_color = None
-post_txt_shape = None
+# POST = the weight-copied model (verified faithful copy above).
+post_img_color = img_emb(m_pre, COLOR_WORDS, "color")
+post_img_shape = img_emb(m_pre, SHAPE_WORDS, "shape")
+post_txt_color = txt_emb(m_pre, COLOR_WORDS)
+post_txt_shape = txt_emb(m_pre, SHAPE_WORDS)
 
 
 def _pca(X, n_comp):
@@ -190,8 +194,9 @@ def save_fig(arrays, labels, kinds, path, title, dims=2):
         if dims == 3:
             ax.scatter(proj[:, 0], proj[:, 1], proj[:, 2],
                        s=42, marker=mkr, label=kind, alpha=0.9)
-            for i, t in enumerate(lab):
-                ax.text(proj[i, 0], proj[i, 1], proj[i, 2], " " + t, fontsize=7)
+            # NOTE: no per-point 3D ax.text -- matplotlib's mplot3d projection
+            # (mplot3d/proj3d._proj_trans_points) crashes with numpy 2.x
+            # ("inhomogeneous shape"). Legend + markers carry the labels.
         else:
             ax.scatter(proj[:, 0], proj[:, 1], s=42, marker=mkr, label=kind)
             for i, t in enumerate(lab):
