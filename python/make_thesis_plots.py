@@ -165,7 +165,8 @@ def _pca(X, n_comp):
     X = X - X.mean(axis=0)                                   # center
     U, S, Vt = np.linalg.svd(X, full_matrices=False)         # (N,K),(K,),(K,d)
     k = min(n_comp, Vt.shape[0])
-    proj = X @ Vt[:k].T                                      # (N,k)
+    proj = (U[:, :k] * S[:k]).astype(np.float32)             # (N,k) == X@Vt[:k].T
+    print(f"   [_pca] X={X.shape} Vt={Vt.shape} k={k}  (SVD proj ok)")
     return proj
 
 
