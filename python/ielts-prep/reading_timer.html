@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IELTS Reading Drill — Timer & Tracker</title>
+<style>
+:root { --bc:#004f9f; --bc2:#003a77; --ok:#2e7d32; --warn:#d84315; --bg:#f4f6f9; }
+* { box-sizing:border-box; }
+body { font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:var(--bg); color:#1a1a1a; margin:0; padding:0 12px 60px; }
+h1 { font-size:1.3rem; color:var(--bc); }
+.card { background:#fff; border:1px solid #dfe3ea; border-radius:12px; padding:16px; margin:14px 0; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+.timer { display:flex; flex-direction:column; align-items:center; gap:6px; }
+#clock { font-size:3.2rem; font-weight:800; font-variant-numeric:tabular-nums; color:var(--bc); }
+#clock.warn { color:var(--warn); }
+.btnrow { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
+button { font-size:1rem; padding:10px 16px; border:none; border-radius:8px; background:var(--bc); color:#fff; cursor:pointer; }
+button:active { transform:translateY(1px); }
+button.alt { background:#5b6472; }
+button.ok { background:var(--ok); }
+button.warn { background:var(--warn); }
+.flex { display:flex; gap:8px; flex-wrap:wrap; }
+.flex>*{flex:1 1 140px;}
+label { font-size:.8rem; color:#555; display:block; margin-top:8px; }
+input,select { width:100%; font-size:1rem; padding:8px; border:1px solid #cbd3de; border-radius:8px; }
+input[type=number]{ font-variant-numeric:tabular-nums; }
+.checks label{ display:flex; gap:8px; align-items:flex-start; margin:6px 0; font-size:.9rem; color:#222; }
+.checks input{ width:auto; margin-top:2px; }
+small.hint{ color:#666; font-size:.78rem; }
+table { width:100%; border-collapse:collapse; font-size:.85rem; }
+th,td{ border:1px solid #dfe3ea; padding:6px; text-align:center; }
+th{ background:var(--bc); color:#fff; }
+tr.total td{ font-weight:700; background:#eaf1fb; }
+#band { font-weight:800; color:var(--bc); }
+.saved{ color:var(--ok); font-size:.8rem; min-height:1em; }
+</style>
+</head>
+<body>
+<h1>IELTS Reading — Drill Timer &amp; Tracker</h1>
+
+<div class="card">
+  <div class="timer">
+    <div id="clock">20:00</div>
+    <small class="hint">One passage = 20 min (real test pace). Start → write questions → stop at beep.</small>
+    <div class="btnrow">
+      <button id="start">Start</button>
+      <button id="pause" class="alt">Pause</button>
+      <button id="reset" class="warn">Reset</button>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h1>Question-type checklist (tick what the drill had)</h1>
+  <div class="checks" id="qtypes">
+    <label><input type="checkbox" data-t="headings"> Matching headings</label>
+    <label><input type="checkbox" data-t="tfng"> True / False / Not Given</label>
+    <label><input type="checkbox" data-t="blanks"> Sentence completion / blanks</label>
+    <label><input type="checkbox" data-t="mcq"> Multiple choice</label>
+    <label><input type="checkbox" data-t="other"> Other (diagrams, matching names)</label>
+  </div>
+</div>
+
+<div class="card">
+  <h1>Score this drill</h1>
+  <div class="flex">
+    <div><label>Correct / 40</label><input type="number" id="cr" min="0" max="40" step="1" placeholder="e.g. 24"></div>
+    <div><label>Passage source (official)</label><input id="src" placeholder="e.g. BC Academic PT1"></div>
+  </div>
+  <label>Notes (error codes: V / K / T / NG / M)</label>
+  <input id="notes" placeholder="e.g. 3 NG errors, ran out of time on 2">
+  <div class="btnrow" style="margin-top:12px">
+    <button id="save" class="ok">Save drill</button>
+  </div>
+  <div id="band" style="margin-top:8px"></div>
+</div>
+
+<div class="card">
+  <h1>Progress</h1>
+  <div id="rows"></div>
+  <div class="saved" id="savedmsg"></div>
+</div>
+
+<script>
+(function(){
+  var T0=1200, secs=T0, running=false, iv=null;
+  var clock=document.getElementById('clock');
+
+  function fmt(){ var m=Math.floor(secs/60), s=secs%60; return (m<10?'0':'')+m+':'+(s<10?'0':'')+s; }
+  function render(){ clock.textContent=fmt(); clock.classList.toggle('warn', secs<=300); }
+  function tick(){ if(secs>0){secs--; render();} else { clearInterval(iv); running=false; clock.textContent='00:00'; try{ navigator.vibrate&&navigator.vibrate(500); }catch(e){} } }
+  document.getElementById('start').onclick=function(){ if(!running){ running=true; iv=setInterval(tick,1000); } };
+  document.getElementById('pause').onclick=function(){ running=false; if(iv){clearInterval(iv); iv=null;} };
+  document.getElementById('reset').onclick=function(){ running=false; if(iv){clearInterval(iv); iv=null;} secs=T0; render(); };
+
+  function load(){ try{ return JSON.parse(localStorage.getItem('ieltsRead')||'[]'); }catch(e){ return []; } }
+  function save2(a){ try{ localStorage.setItem('ieltsRead', JSON.stringify(a)); }catch(e){} }
+
+  function bandFromRaw(r){ if(r>=33)return 8.0; if(r>=30)return 7.5; if(r>=27)return 7.0;
+    if(r>=23)return 6.5; if(r>=20)return 6.0; if(r>=16)return 5.5; return 5.0; }
+
+  function draw(){
+    var a=load(), tb=document.getElementById('rows'), bd=document.getElementById('band');
+    if(a.length===0){ tb.innerHTML='<small class="hint">No drills yet. Finish one timed passage, then save it here.</small>'; return; }
+    var h='<table><tr><th>#</th><th>Source</th><th>Raw /40</th><th>Band</th><th>Notes</th></tr>';
+    var total=0, i;
+    for(i=a.length-1;i>=0;i--){ var r=a[i]; total+=r.raw;
+      h+='<tr><td>'+(a.length-i)+'</td><td>'+(r.src||'—')+'</td><td>'+r.raw+'</td><td>'+bandFromRaw(r.raw).toFixed(1)+'</td><td>'+(r.notes||'')+'</td></tr>'; }
+    var n=a.length, avg=n?total/n:0;
+    h+='<tr class="total"><td colspan="2">Avg</td><td>'+avg.toFixed(1)+'</td><td>'+bandFromRaw(Math.round(avg)).toFixed(1)+'</td><td>'+n+' drills</td></tr></table>';
+    tb.innerHTML=h;
+    var lastRaw=a[a.length-1].raw, lastBand=bandFromRaw(lastRaw).toFixed(1);
+    bd.innerHTML='Last drill: <b>'+lastRaw+'/40</b> → band <b>'+lastBand+'</b>  ·  Target: 27-30/40 (band 7.0)';
+  }
+
+  document.getElementById('save').onclick=function(){
+    var raw=parseInt(document.getElementById('cr').value,10);
+    if(isNaN(raw)||raw<0||raw>40){ alert('Enter a correct score between 0 and 40.'); return; }
+    var src=document.getElementById('src').value.trim();
+    var notes=document.getElementById('notes').value.trim();
+    var types=[]; document.querySelectorAll('#qtypes input:checked').forEach(function(c){ types.push(c.getAttribute('data-t')); });
+    var a=load();
+    a.push({raw:raw, src:src, notes:notes, types:types, at:new Date().toISOString()});
+    save2(a); draw();
+    document.getElementById('savedmsg').textContent='Saved '+(src||'drill')+' — '+raw+'/40 ('+bandFromRaw(raw).toFixed(1)+'). Keep going!';
+    document.getElementById('cr').value=''; document.getElementById('notes').value='';
+  };
+
+  draw(); render();
+})();
+</script>
+</body>
+</html>
